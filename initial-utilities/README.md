@@ -283,7 +283,6 @@ and print out the uncompressed output to standard output using **printf()**.
   originally input into **wzip** is lost). The same thing holds for
   **wunzip**. 
 
-
 ### Footnotes
 
 
@@ -292,6 +291,11 @@ C library, but at some point, you've just got to **read documentation** to
 learn what is available. Why not now, when you are young? Or, if you are old,
 why not now, before it's ... ahem ... too late?
 
-
+Testing
+---
+```sh
+cd ${project_directory} # wcat / wgrep / wzip / wunzip
+./run_test.sh
+```
 
 
