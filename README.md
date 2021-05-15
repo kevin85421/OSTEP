@@ -14,7 +14,7 @@ Development Environment
 ./xv6-container build
 
 # Step2: Create Docker container
-docker run -v "`pwd`"/xv6-public:/home/xv6user/xv6  --name OSTEP -itd xv6env
+docker run -v "`pwd`":/home/xv6user/xv6  --name OSTEP -itd xv6env
 
 # Step3: Enter Docker container
 docker exec -it OSTEP bash
