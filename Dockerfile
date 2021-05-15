@@ -1,5 +1,7 @@
 FROM ubuntu:18.04
 
+ENV DEBIAN_FRONTEND noninteractive
+
 RUN apt-get update && \
         apt-get install -y \
         build-essential \
@@ -7,9 +9,9 @@ RUN apt-get update && \
         gcc-multilib \
         gdb-multiarch \
         tmux \
-        qemu
+        qemu \
+        expect \
+        gawk
 
-RUN adduser xv6user
-USER xv6user
 WORKDIR /home/xv6user/xv6/
 CMD ["/bin/bash"]
