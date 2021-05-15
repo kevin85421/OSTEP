@@ -6,6 +6,37 @@ UW-Madison CS 537: Introduction to Operating Systems
 
 * Read [project-descriptions](project-descriptions.md) for more informations.
 
+Development Environment
+---
+* Docker
+```sh
+# Step1: Build Docker image
+./xv6-container build
+
+# Step2: Create Docker container
+docker run -v "`pwd`"/xv6-public:/home/xv6user/xv6  --name OSTEP -itd xv6env
+
+# Step3: Enter Docker container
+docker exec -it OSTEP bash
+
+# Operations about containers
+# List
+docker container ls -a
+
+# Stop
+docker stop OSTEP
+
+# Start
+docker start OSTEP
+```
+* Compile xv6
+```sh
+make qemu-nox
+```
+* Reference
+  * [xv6-public](https://github.com/mit-pdos/xv6-public/tree/master)
+  * [xv6-docker](https://github.com/jrodal98/xv6-docker)
+
 C/Linux Projects
 ---
 ### Initial Projects
