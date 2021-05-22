@@ -5,6 +5,8 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include "c-vector/cvector.h"
+#include <stdbool.h>
+#include <fcntl.h>
 
 /** for debug **/
 static void print_vector(cvector_vector_type(char*) vec) {
@@ -23,30 +25,65 @@ static void error_function() {
     write(STDERR_FILENO, error_message, strlen(error_message)); 
 }
 
+static bool redirect_function(char* line, char** filename) {
+    if (strchr(line, '>') == NULL) {
+        return false;
+    }
+
+    char* before = strtok(line, ">"); // "before" is assigned to "line"
+    char* after  = strtok(NULL, "\n");
+    if (after == NULL) {
+        return true;
+    }
+
+    // More than 1 '>'
+    if (strchr(after, '>') != NULL) {
+        return true;
+    }
+
+    // multiple files or no file
+    // Ex: (1) ls > output1 output2 (2) ls > 
+    int filenum = 0;
+    char* token = strtok(after, " \0");
+
+    if (token != NULL) {
+        (*filename) = malloc(sizeof(char) * strlen(token));
+        strcpy(*filename, token);
+    }
+
+    while (token != NULL) {
+        filenum ++;
+        token = strtok(NULL, " \0");
+    }
+
+    if (filenum != 1) {
+        free(*filename);
+        (*filename) = NULL;
+        return true;
+    }
+
+    return true;
+}
+
 static cvector_vector_type(char*) parse_cmd(char* line, cvector_vector_type(char*) path, char* first) {
     cvector_vector_type(char*) cmd = NULL;
-    line[strlen(line) - 1] = 0; // replace newline char with null
+    if (line[strlen(line)-1] == '\n') {
+        line[strlen(line) - 1] = 0; // replace newline char with null
+    }
     char* tmp = strtok(line, " \0");
     strcpy(first, tmp);
     char* token = malloc(sizeof(char) * 1024);
-
     size_t size = cvector_size(path);
-    // char exec_path[1024];
-    // printf("path:\n");
-    // print_vector(path);
 
     for (size_t i = 0; i < size; i++) {
         strcpy(token, path[i]);
         strcat(token, "/");
         strcat(token, tmp);
-        // printf("%s\n", token);
         int fd = access(token, X_OK);
         if (fd != -1) { // no error
             break;
         }
     }
-
-    // printf("exec path: %s\n", token);
 
     while (token != NULL) {
         cvector_push_back(cmd, token);
@@ -54,11 +91,10 @@ static cvector_vector_type(char*) parse_cmd(char* line, cvector_vector_type(char
     }
 
     free(token);
-
     return cmd;
 }
 
-static void exec_cmd(cvector_vector_type(char*) cmd, cvector_vector_type(char*) path) {
+static void exec_cmd(cvector_vector_type(char*) cmd, cvector_vector_type(char*) path, bool is_redirect, char* redirect_output) {
     int rc = fork();
     if (rc < 0) {
         fprintf(stderr, "fork failed\n");
@@ -69,11 +105,27 @@ static void exec_cmd(cvector_vector_type(char*) cmd, cvector_vector_type(char*) 
             Important: The second argument of execv is a pointer to an array of pointers to null-terminated character strings. 
             A NULL pointer is used to mark the end of the array.
         */
-        cvector_push_back(cmd, NULL); 
+        cvector_push_back(cmd, NULL);
+        int fd = 0;
+        if (is_redirect) {
+            int fd = open(redirect_output, O_WRONLY | O_TRUNC | O_CREAT, 0666);
+            // if (fd == -1) {
+            //     error_function();
+            //     close(fd);
+            //     exit(1);
+            // }
+            dup2(fd, STDOUT_FILENO);
+        }
+
         int status_code = execv(cmd[0], cmd);
         if (status_code == -1) {
             error_function();
         }
+
+        if(is_redirect) {
+            close(fd);
+        }
+
         exit(0);
     } else { // parent process
         int wc = wait(NULL);
@@ -124,25 +176,27 @@ int main(int argc, char *argv[]) {
     cvector_push_back(path, "/bin");
 
     // printf("main (pid:%d)\n", (int)getpid());
+    // More than 1 input file
+    if (argc > 2) { 
+        error_function();
+        exit(1);
+    }
 
     if (argc == 1) { // interactive mode
         char buffer[1024];
         char first[1024];
         while (1) {
             printf("wish> ");
-
-            // printf("path:\n");
-            // print_vector(path);
-
             fgets(buffer, sizeof(buffer), stdin);
 
-            // printf("path:\n");
-            // print_vector(path);
+            char* redirect_output = NULL;
+            bool redirect = redirect_function(buffer, &redirect_output);
+            if ((redirect == true) && (redirect_output == NULL)) {
+                error_function();
+                continue;
+            }
 
             cvector_vector_type(char*) cmd = parse_cmd(buffer, path, first);
-
-            // printf("cmd:\n");
-            // print_vector(cmd);
 
             // built-in commands: "exit", "cd", "path"
             if (strcmp(first, "exit") == 0) {
@@ -151,30 +205,31 @@ int main(int argc, char *argv[]) {
                 chdir_function(cmd);
             } else if (strcmp(first, "path") == 0) {
                 path_function(cmd, path);
-                // printf("path:\n");
-                // print_vector(path);
             } else {
                 // not built-in commands
-                // printf("path (before exec_cmd):\n");
-                // print_vector(path);
-                exec_cmd(cmd, path);
+                exec_cmd(cmd, path, redirect, redirect_output);
             }
             cvector_free(cmd);
-            // printf("path:\n");
-            // print_vector(path);
         }
     } else { // batch mode
         FILE *fp = fopen(argv[1], "r");
         if (fp == NULL) {
-            perror("Error opening file");
+            error_function();
             exit(1);
         }
 
         char buffer[1024];
         char first[1024];
         while (fgets(buffer, sizeof(buffer), fp) != NULL) {
+            char* redirect_output = NULL;
+            bool redirect = redirect_function(buffer, &redirect_output);
+            // printf("%s\n", redirect_output);
+            // printf("redirect_output: %s \n", redirect_output);
+            if ((redirect == true) && (redirect_output == NULL)) {
+                error_function();
+                continue;
+            }
             cvector_vector_type(char*) cmd = parse_cmd(buffer, path, first);
-
             // built-in commands: "exit", "cd", "path"
             if (strcmp(first, "exit") == 0) {
                 exit_function(cmd, path);
@@ -184,7 +239,7 @@ int main(int argc, char *argv[]) {
                 path_function(cmd, path);
             } else {
                 // not built-in commands
-                exec_cmd(cmd, path);
+                exec_cmd(cmd, path, redirect, redirect_output);
             }
             cvector_free(cmd);
         }
