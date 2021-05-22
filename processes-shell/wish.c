@@ -70,7 +70,12 @@ static cvector_vector_type(char*) parse_cmd(char* line, cvector_vector_type(char
     if (line[strlen(line)-1] == '\n') {
         line[strlen(line) - 1] = 0; // replace newline char with null
     }
+
     char* tmp = strtok(line, " \0");
+    if (tmp == NULL) { // A string only has spaces. Example: "    "
+        return cmd;
+    }
+
     strcpy(first, tmp);
     char* token = malloc(sizeof(char) * 1024);
     size_t size = cvector_size(path);
@@ -197,6 +202,9 @@ int main(int argc, char *argv[]) {
             }
 
             cvector_vector_type(char*) cmd = parse_cmd(buffer, path, first);
+            if (cmd == NULL) { // A string only has spaces. Example: "    "
+                continue;
+            }
 
             // built-in commands: "exit", "cd", "path"
             if (strcmp(first, "exit") == 0) {
@@ -223,13 +231,16 @@ int main(int argc, char *argv[]) {
         while (fgets(buffer, sizeof(buffer), fp) != NULL) {
             char* redirect_output = NULL;
             bool redirect = redirect_function(buffer, &redirect_output);
-            // printf("%s\n", redirect_output);
-            // printf("redirect_output: %s \n", redirect_output);
             if ((redirect == true) && (redirect_output == NULL)) {
                 error_function();
                 continue;
             }
+
             cvector_vector_type(char*) cmd = parse_cmd(buffer, path, first);
+            if (cmd == NULL) { // A string only has spaces. Example: "    "
+                continue;
+            }
+
             // built-in commands: "exit", "cd", "path"
             if (strcmp(first, "exit") == 0) {
                 exit_function(cmd, path);
