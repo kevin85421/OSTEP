@@ -14,7 +14,7 @@ static void print_vector(cvector_vector_type(char*) vec) {
         char **it;
         int i = 0;
         for (it = cvector_begin(vec); it != cvector_end(vec); ++it) {
-            printf("v[%d] = %s / len = %lu \n", i, *it, strlen(*it));
+            printf("v[%d] = %s| len = %lu \n", i, *it, strlen(*it));
             ++i;
         }
     }
@@ -99,7 +99,29 @@ static cvector_vector_type(char*) parse_cmd(char* line, cvector_vector_type(char
     return cmd;
 }
 
-static void exec_cmd(cvector_vector_type(char*) cmd, cvector_vector_type(char*) path, bool is_redirect, char* redirect_output) {
+static cvector_vector_type(char*) parallel_command(char* line, bool* parallel) {
+    cvector_vector_type(char*) cmdlines = NULL;
+
+    if (strchr(line, '&') != NULL) {
+        (*parallel) = true;
+    }
+
+    if (line[strlen(line)-1] == '\n') {
+        line[strlen(line) - 1] = 0; // replace newline char with null
+    }
+
+    char* token = strtok(line, "&"); // line will be modified
+    while (token != NULL) {
+        cvector_push_back(cmdlines, token);
+        token = strtok(NULL, "&");
+    }
+
+    free(token);
+    return cmdlines;
+    
+}
+
+static void exec_cmd(cvector_vector_type(char*) cmd, cvector_vector_type(char*) path, bool is_redirect, char* redirect_output, bool parallel) {
     int rc = fork();
     if (rc < 0) {
         fprintf(stderr, "fork failed\n");
@@ -133,7 +155,9 @@ static void exec_cmd(cvector_vector_type(char*) cmd, cvector_vector_type(char*) 
 
         exit(0);
     } else { // parent process
-        int wc = wait(NULL);
+        if (!parallel) {
+            int wc = wait(NULL);
+        }
         // printf("(cmd: %s) parent process of %d (wc: %d) (pid: %d)\n", cmd[0], rc, wc, (int)getpid());
     }
 }
@@ -194,30 +218,44 @@ int main(int argc, char *argv[]) {
             printf("wish> ");
             fgets(buffer, sizeof(buffer), stdin);
 
-            char* redirect_output = NULL;
-            bool redirect = redirect_function(buffer, &redirect_output);
-            if ((redirect == true) && (redirect_output == NULL)) {
-                error_function();
+            bool parallel = false;
+            cvector_vector_type(char*) cmdlines = parallel_command(buffer, &parallel);
+            size_t ncmd = cvector_size(cmdlines); 
+            if ((ncmd == 0) && (parallel)) { // tests/16.in (Command only contains &)
                 continue;
             }
 
-            cvector_vector_type(char*) cmd = parse_cmd(buffer, path, first);
-            if (cmd == NULL) { // A string only has spaces. Example: "    "
-                continue;
+            for (size_t i=0; i < ncmd; i++) {
+                char* redirect_output = NULL;
+                bool redirect = redirect_function(cmdlines[i], &redirect_output);
+                if ((redirect == true) && (redirect_output == NULL)) {
+                    error_function();
+                    continue;
+                }
+
+                cvector_vector_type(char*) cmd = parse_cmd(cmdlines[i], path, first);
+                if (cmd == NULL) { // A string only has spaces. Example: "    "
+                    continue;
+                }
+
+                // built-in commands: "exit", "cd", "path"
+                if (strcmp(first, "exit") == 0) {
+                    exit_function(cmd, path);
+                } else if (strcmp(first, "cd") == 0) {
+                    chdir_function(cmd);
+                } else if (strcmp(first, "path") == 0) {
+                    path_function(cmd, path);
+                } else {
+                    // not built-in commands
+                    exec_cmd(cmd, path, redirect, redirect_output, parallel);
+                }
+                cvector_free(cmd);
             }
 
-            // built-in commands: "exit", "cd", "path"
-            if (strcmp(first, "exit") == 0) {
-                exit_function(cmd, path);
-            } else if (strcmp(first, "cd") == 0) {
-                chdir_function(cmd);
-            } else if (strcmp(first, "path") == 0) {
-                path_function(cmd, path);
-            } else {
-                // not built-in commands
-                exec_cmd(cmd, path, redirect, redirect_output);
+            for (size_t i=0; i < ncmd; i++) {
+                wait(NULL);
             }
-            cvector_free(cmd);
+            cvector_free(cmdlines);
         }
     } else { // batch mode
         FILE *fp = fopen(argv[1], "r");
@@ -229,30 +267,44 @@ int main(int argc, char *argv[]) {
         char buffer[1024];
         char first[1024];
         while (fgets(buffer, sizeof(buffer), fp) != NULL) {
-            char* redirect_output = NULL;
-            bool redirect = redirect_function(buffer, &redirect_output);
-            if ((redirect == true) && (redirect_output == NULL)) {
-                error_function();
+            bool parallel = false;
+            cvector_vector_type(char*) cmdlines = parallel_command(buffer, &parallel);
+            size_t ncmd = cvector_size(cmdlines); 
+            if ((ncmd == 0) && (parallel)) { // tests/16.in (Command only contains &)
                 continue;
             }
 
-            cvector_vector_type(char*) cmd = parse_cmd(buffer, path, first);
-            if (cmd == NULL) { // A string only has spaces. Example: "    "
-                continue;
+            for (size_t i=0; i < ncmd; i++) {
+                char* redirect_output = NULL;
+                bool redirect = redirect_function(cmdlines[i], &redirect_output);
+                if ((redirect == true) && (redirect_output == NULL)) {
+                    error_function();
+                    continue;
+                }
+
+                cvector_vector_type(char*) cmd = parse_cmd(cmdlines[i], path, first);
+                if (cmd == NULL) { // A string only has spaces. Example: "    "
+                    continue;
+                }
+
+                // built-in commands: "exit", "cd", "path"
+                if (strcmp(first, "exit") == 0) {
+                    exit_function(cmd, path);
+                } else if (strcmp(first, "cd") == 0) {
+                    chdir_function(cmd);
+                } else if (strcmp(first, "path") == 0) {
+                    path_function(cmd, path);
+                } else {
+                    // not built-in commands
+                    exec_cmd(cmd, path, redirect, redirect_output, parallel);
+                }
+                cvector_free(cmd);
             }
 
-            // built-in commands: "exit", "cd", "path"
-            if (strcmp(first, "exit") == 0) {
-                exit_function(cmd, path);
-            } else if (strcmp(first, "cd") == 0) {
-                chdir_function(cmd);
-            } else if (strcmp(first, "path") == 0) {
-                path_function(cmd, path);
-            } else {
-                // not built-in commands
-                exec_cmd(cmd, path, redirect, redirect_output);
+            for (size_t i=0; i < ncmd; i++) {
+                wait(NULL);
             }
-            cvector_free(cmd);
+            cvector_free(cmdlines);
         }
     }
 }
