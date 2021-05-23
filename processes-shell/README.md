@@ -26,6 +26,20 @@ every day in Unix. If you don't know what shell you are running, it's probably
 `bash`. One thing you should do on your own time is learn more about your
 shell, by reading the man pages or other online materials.
 
+## Run & Testing
+```
+gcc wish.c -o wish
+
+# Interactive mode
+./wish
+
+# Batch mode
+./wish tests/4.in
+
+# Run tests
+./test-wish.sh
+```
+
 ## Program Specifications
 
 ### Basic Shell: `wish`
