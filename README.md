@@ -18,6 +18,10 @@ docker run -v "`pwd`":/home/xv6user/xv6  --name OSTEP -itd xv6env
 
 # Step3: Enter Docker container
 docker exec -it OSTEP bash
+
+# Step4:
+# * xv6-public # (MIT version)
+# * xv6-wisc   # (UW-Madison refactor version)
 ```
 * Compile xv6
 ```sh
