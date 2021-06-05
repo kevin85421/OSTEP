@@ -2,6 +2,7 @@
 #include "x86.h"
 #include "defs.h"
 #include "param.h"
+#include "pstat.h"
 #include "mmu.h"
 #include "proc.h"
 #include "sysfunc.h"
@@ -87,4 +88,14 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+// TODO: p2b
+int sys_settickets(void) {
+  return 0;
+}
+
+// TODO: p2b
+int sys_getpinfo(void) {
+  return 0;
 }

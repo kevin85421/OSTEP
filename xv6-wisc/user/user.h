@@ -1,5 +1,6 @@
 #ifndef _USER_H_
 #define _USER_H_
+#include "pstat.h"
 
 struct stat;
 
@@ -25,6 +26,8 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int settickets(int);
+int getpinfo(struct pstat *);
 
 // user library functions (ulib.c)
 int stat(char*, struct stat*);
