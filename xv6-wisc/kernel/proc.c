@@ -5,6 +5,8 @@
 #include "x86.h"
 #include "proc.h"
 #include "spinlock.h"
+#include "random.h"
+#include "pstat.h"
 
 struct {
   struct spinlock lock;
@@ -14,10 +16,42 @@ struct {
 static struct proc *initproc;
 
 int nextpid = 1;
+static int total_tickets = 0;
 extern void forkret(void);
 extern void trapret(void);
 
 static void wakeup1(void *chan);
+
+void settickets(struct proc* p, int number, int lock)
+{
+  // cprintf("settickets: [pid:%d] [num:%d] [lock:%d]\n", p->pid, number, lock);
+  if (lock > 0) {
+    acquire(&ptable.lock);
+    p->tickets = number;
+    release(&ptable.lock); 
+  } else {
+    p->tickets = number;
+  }
+}
+
+void getpinfo(struct pstat* pst) {
+  acquire(&ptable.lock);
+  struct proc *p;
+  int i=0;
+  for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+    if (p->state == RUNNING)
+      pst->inuse[i] = 1;
+    else
+      pst->inuse[i] = 0;
+    pst->tickets[i] = p->tickets;
+    pst->pid[i] = p->pid;
+    pst->ticks[i] = p->ticks;
+    pst->state[i] = p->state;
+    i++;
+  }
+  pst->total_tickets = total_tickets;
+  release(&ptable.lock);
+}
 
 void
 pinit(void)
@@ -98,6 +132,8 @@ userinit(void)
   p->cwd = namei("/");
 
   p->state = RUNNABLE;
+  p->ticks = 0;
+  settickets(p, 1, 0);
   release(&ptable.lock);
 }
 
@@ -155,6 +191,8 @@ fork(void)
  
   pid = np->pid;
   np->state = RUNNABLE;
+  np->ticks = 0;
+  settickets(np, proc->tickets, 0);
   safestrcpy(np->name, proc->name, sizeof(proc->name));
   return pid;
 }
@@ -256,32 +294,51 @@ void
 scheduler(void)
 {
   struct proc *p;
+  int seed = 2;
 
   for(;;){
     // Enable interrupts on this processor.
     sti();
+    acquire(&ptable.lock);
+    total_tickets = 0;
+
+    for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
+      if(p->state == RUNNABLE) {
+        total_tickets += p->tickets;
+      }
+    }
+
+    seed = random(seed);
+    if (seed < 0) {
+      seed = seed * (-1);
+    }
+    int winner = seed % (total_tickets + 1); // get winner;
+    int counter = 0;
 
     // Loop over process table looking for process to run.
-    acquire(&ptable.lock);
     for(p = ptable.proc; p < &ptable.proc[NPROC]; p++){
       if(p->state != RUNNABLE)
         continue;
-
+      counter = counter + p->tickets;
+      if (counter < winner) {
+        continue;
+      } 
       // Switch to chosen process.  It is the process's job
       // to release ptable.lock and then reacquire it
       // before jumping back to us.
+      // cprintf("[winner: %d][pid: %d][ticket: %d][counter: %d][total_tickets: %d]\n", winner, p->pid, p->tickets, counter, total_tickets);
+      p->ticks++;
       proc = p;
       switchuvm(p);
       p->state = RUNNING;
       swtch(&cpu->scheduler, proc->context);
       switchkvm();
-
       // Process is done running for now.
       // It should have changed its p->state before coming back.
       proc = 0;
+      break;
     }
     release(&ptable.lock);
-
   }
 }
 

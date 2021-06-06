@@ -90,12 +90,21 @@ sys_uptime(void)
   return xticks;
 }
 
-// TODO: p2b
 int sys_settickets(void) {
+  int n;
+  if(argint(0, &n) < 0)
+    return -1;
+  if(n < 1)
+    return -1;
+  settickets(proc, n, 1);
   return 0;
 }
 
 // TODO: p2b
 int sys_getpinfo(void) {
+  struct pstat *pst;
+  if(argptr(0, (void*)&pst, sizeof(*pst)) < 0)
+    return -1;
+  getpinfo(pst);
   return 0;
 }
