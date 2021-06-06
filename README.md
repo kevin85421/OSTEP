@@ -57,3 +57,9 @@ These projects all are to be done inside the [xv6](https://pdos.csail.mit.edu/6.
 1. (Project 1b) [xv6: Introducing a new system call](initial-xv6)
 * ✅ (May 15, 2021) 
 * Introduce a new system call `getreadcount()`. This project is very helpful for me to understand the process of calling a syscall.
+
+2. (Project 2b) [An xv6 Lottery Scheduler](scheduling-xv6-lottery/README.md)
+* ✅ (June 6, 2021)
+* Implement a [lottery scheduler](https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched-lottery.pdf) in xv6. To elaborate, I implement a syscall `settickets` to set the number of tickets of the calling process. The basic idea is simple: assign each running process a slice of the processor based in proportion to the number of tickets it has; the more tickets a process has, the more it runs. Each time slice, a randomized lottery determines the winner of the lottery; that winning process is the one that runs for that time slice.
+  
+  <img src="images/p2b_experiment.png" width="600" height="400" align="center"/>

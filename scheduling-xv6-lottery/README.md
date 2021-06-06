@@ -87,7 +87,18 @@ might have 30 tickets, process B 20, and process C 10). The graph is likely to
 be pretty boring, but should clearly show that your lottery scheduler works as
 desired.
 
-
-
-
+## Experiment
+```bash
+# Step1: Enter docker container
+# Step2: Move to xv6-wisc directory
+# Step3: Launch xv6
+make qemu-nox
+# Step4: Run lottery (in xv6)
+lottery
+# Step5: Record ten samples and draw a graph
+# Step6: 
+#     Discussion: Why the experiment result is not 1:2:3? 
+#     My speculation: My random number generator does not generate numbers from a normal distribution. 
+```
+<img src="../images/p2b_experiment.png" width="600" height="400" align="center"/>
 

@@ -37,7 +37,7 @@ main(void)
         for(;;){}
       } else if (pid3 > 0) {
         for(;;) {
-          sleep(200);
+          sleep(1000);
           printpstat();
         } 
       }
