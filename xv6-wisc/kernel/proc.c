@@ -309,9 +309,6 @@ scheduler(void)
     }
 
     seed = random(seed);
-    if (seed < 0) {
-      seed = seed * (-1);
-    }
     int winner = seed % (total_tickets + 1); // get winner;
     int counter = 0;
 

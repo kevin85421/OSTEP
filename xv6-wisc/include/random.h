@@ -54,8 +54,12 @@ int random(int seed)
 		if (move_time == 32)
 		{
 			move_time =0;
-            return seed;
+			break;
 		}
+	}
+
+	if (seed < 0) {
+		seed = seed * -1;
 	}
 
     return seed;
