@@ -49,6 +49,15 @@ C/Linux Projects
   wish> ls -l & echo 123
   ```
 
+### Parallel Zip
+3. (Project 3a) [Parallel Zip](concurrency-pzip)
+* ✅ (June 19, 2021) 
+* In project 1a, I implemented a simple compression tool based on run-length encoding, known simply as zip.
+* In project 3a, I implement something similar, except I use threads to make a parallel version of zip.
+* Keywords: 
+  * Multi-thread: **pthread**
+  * File I/O: **open**, **mmap**, **munmap**
+
 
 Kernel Hacking Projects (xv6)
 ---

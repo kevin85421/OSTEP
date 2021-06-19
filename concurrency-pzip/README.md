@@ -91,5 +91,7 @@ files correctly.
 If you pass the correctness tests, your code will be tested for performance;
 higher performance will lead to better scores.
 
-
-
+## Testing
+```sh
+./run_test.sh
+```
