@@ -1,0 +1,1 @@
+gcc -o wzip wzip.c -Wall -Werror -pthread -O; ./test-wzip.sh
