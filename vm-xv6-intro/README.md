@@ -84,6 +84,22 @@ region of memory. In both cases, xv6 should trap and kill the process (this
 will happen without too much trouble on your part, if you do the project in a
 sensible way).
 
+## Testing
+* Thank kunalverma75 for the awesome testcases. Check the [link](https://github.com/kunalverma75/CS537/tree/master/p3b/test/ctests) for more testcases.
+```bash
+# Step1: Enter docker container
+# Step2: Move to xv6-wisc directory
+# Step3: Launch xv6
+make qemu-nox
 
+# Step4: Run testcase for Null-pointer Dereference
+null
+
+# Step5: Run testcases for Read-only Code
+mprotect
+mprotect_args
+mprotect_fail
+mprotect_advanced
+```
 
 

@@ -72,3 +72,10 @@ These projects all are to be done inside the [xv6](https://pdos.csail.mit.edu/6.
 * Implement a [lottery scheduler](https://pages.cs.wisc.edu/~remzi/OSTEP/cpu-sched-lottery.pdf) in xv6. To elaborate, I implement a syscall `settickets` to set the number of tickets of the calling process. The basic idea is simple: assign each running process a slice of the processor based in proportion to the number of tickets it has; the more tickets a process has, the more it runs. Each time slice, a randomized lottery determines the winner of the lottery; that winning process is the one that runs for that time slice.
   
   <img src="images/p2b_experiment.png" width="600" height="400" align="center"/>
+
+3. (Project 3b) [Virtual Memory (Null Pointer and Read-Only Regions)](vm-xv6-intro/README.md)
+* ✅ (July 11, 2021)
+* **(Task1) Null-pointer Dereference:** In xv6's VM system, user code is loaded into the very first part of the address space. Thus, if you dereference a null pointer, you will not see an exception; rather, you will see whatever code is the first bit of code in the program that is running. In Task1, we should make xv6 trap and kill the process that dereferences a null pointer.
+* **(Task2) Read-only Code:** In most operating systems, code is marked read-only instead of read-write. However, in xv6 this is not the case, so a buggy program could accidentally overwrite its own text. In Task2, we need to implement 2 syscalls to avoid the accidents.
+  * `mprotect(void *addr, int len)`: Changes the protection bits of the page range starting at `addr` and of `len` pages to be read only. Thus, a write to this region should cause a trap (and thus kill the process) after mprotect() finishes. 
+  * `munprotect(void *addr, int len)`: Sets the region back to both readable and writeable.
