@@ -25,5 +25,7 @@
 #define SYS_uptime 21
 #define SYS_settickets 22
 #define SYS_getpinfo 23
+#define SYS_mprotect 24
+#define SYS_munprotect 25
 
 #endif // _SYSCALL_H_

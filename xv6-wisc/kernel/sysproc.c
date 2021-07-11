@@ -100,7 +100,7 @@ int sys_settickets(void) {
   return 0;
 }
 
-// TODO: p2b
+// P2b
 int sys_getpinfo(void) {
   struct pstat *pst;
   if(argptr(0, (void*)&pst, sizeof(*pst)) < 0)
@@ -108,3 +108,24 @@ int sys_getpinfo(void) {
   getpinfo(pst);
   return 0;
 }
+
+// P3b
+int sys_mprotect(void) {
+  void *addr;
+  int len;
+  if(argptr(0, (void*)&addr, sizeof(addr)) < 0)
+    return -1;
+  if(argint(1, &len) < 0)
+    return -1;
+  return mprotect(addr, len);
+}
+
+int sys_munprotect(void) {
+  void *addr;
+  int len;
+  if(argptr(0, (void*)&addr, sizeof(addr)) < 0)
+    return -1;
+  if(argint(1, &len) < 0)
+    return -1;
+  return munprotect(addr, len);
+} 

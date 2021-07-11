@@ -306,7 +306,7 @@ copyuvm(pde_t *pgdir, uint sz)
 
   if((d = setupkvm()) == 0)
     return 0;
-  for(i = 0; i < sz; i += PGSIZE){
+  for(i = PGSIZE; i < sz; i += PGSIZE){
     if((pte = walkpgdir(pgdir, (void*)i, 0)) == 0)
       panic("copyuvm: pte should exist");
     if(!(*pte & PTE_P))
@@ -315,7 +315,10 @@ copyuvm(pde_t *pgdir, uint sz)
     if((mem = kalloc()) == 0)
       goto bad;
     memmove(mem, (char*)pa, PGSIZE);
-    if(mappages(d, (void*)i, PGSIZE, PADDR(mem), PTE_W|PTE_U) < 0)
+
+    // child process must inherit the permission from parent process
+    int perm =(*pte & PTE_W) ? (PTE_W | PTE_U) : PTE_U;
+    if(mappages(d, (void*)i, PGSIZE, PADDR(mem), perm) < 0)
       goto bad;
   }
   return d;
@@ -362,5 +365,47 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
     buf += n;
     va = va0 + PGSIZE;
   }
+  return 0;
+}
+
+int mprotect(void *addr, int len) {
+  // cprintf("mprotect [addr: %p, len: %d]\n", addr, len);
+  if (len <= 0)
+    return -1;
+  if((uint)addr % PGSIZE != 0) // addr must be page aligned
+    return -1;
+
+  for(int i=0; i < len; i++) {
+    if (((uint)addr + (i+1)*PGSIZE) > proc->sz)
+      return -1;
+  }
+
+  pte_t *pte;
+  for(int i=0; i < len; i++){
+    pte = walkpgdir(proc->pgdir, addr + i*PGSIZE, 0);
+    *pte = *pte & (~PTE_W);
+  }
+  lcr3(PADDR(proc->pgdir)); // Tell x86 that a PTE is changed
+  return 0;
+}
+
+int munprotect(void *addr, int len) {
+  // cprintf("munprotect [addr: %p, len: %d]\n", addr, len);
+  if (len <= 0)
+    return -1;
+  if((uint)addr % PGSIZE != 0) // addr must be page aligned
+    return -1;
+
+  for(int i=0; i < len; i++) {
+    if (((uint)addr + (i+1)*PGSIZE) > proc->sz)
+      return -1;
+  }
+
+  pte_t *pte;
+  for(int i=0; i < len; i++){
+    pte = walkpgdir(proc->pgdir, addr + i*PGSIZE, 0);
+    *pte = *pte | PTE_W;
+  }
+  lcr3(PADDR(proc->pgdir)); // Tell x86 that a PTE is changed
   return 0;
 }

@@ -105,6 +105,8 @@ static int (*syscalls[])(void) = {
 [SYS_uptime]  sys_uptime,
 [SYS_settickets] sys_settickets,
 [SYS_getpinfo] sys_getpinfo,
+[SYS_mprotect] sys_mprotect,
+[SYS_munprotect] sys_munprotect,
 };
 
 // Called on a syscall trap. Checks that the syscall number (passed via eax)
