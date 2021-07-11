@@ -77,5 +77,5 @@ These projects all are to be done inside the [xv6](https://pdos.csail.mit.edu/6.
 * ✅ (July 11, 2021)
 * **(Task1) Null-pointer Dereference:** In xv6's VM system, user code is loaded into the very first part of the address space. Thus, if you dereference a null pointer, you will not see an exception; rather, you will see whatever code is the first bit of code in the program that is running. In Task1, we should make xv6 trap and kill the process that dereferences a null pointer.
 * **(Task2) Read-only Code:** In most operating systems, code is marked read-only instead of read-write. However, in xv6 this is not the case, so a buggy program could accidentally overwrite its own text. In Task2, we need to implement 2 syscalls to avoid the accidents.
-  * `mprotect(void *addr, int len)`: Changes the protection bits of the page range starting at `addr` and of `len` pages to be read only. Thus, a write to this region should cause a trap (and thus kill the process) after mprotect() finishes. 
-  * `munprotect(void *addr, int len)`: Sets the region back to both readable and writeable.
+  * **mprotect(void \*addr, int len):** Changes the protection bits of the page range starting at `addr` and of `len` pages to be read only. Thus, a write to this region should cause a trap (and thus kill the process) after mprotect() finishes. 
+  * **munprotect(void \*addr, int len):** Sets the region back to both readable and writeable.
